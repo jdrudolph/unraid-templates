@@ -1,0 +1,230 @@
+<?xml version='1.0' standalone='yes'?>
+<!DOCTYPE PLUGIN [
+<!ENTITY name      "hebrew-poc">
+<!ENTITY author    "jdrudolph">
+<!ENTITY version   "2026.10.25">
+<!ENTITY repo      "https://raw.githubusercontent.com/jdrudolph/unraid-templates/main">
+<!ENTITY pluginURL "&repo;/plugin/&name;.plg">
+<!ENTITY plgPATH   "/boot/config/plugins/&name;">
+<!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
+]>
+
+<PLUGIN name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;"
+        min="6.12.0" icon="language" support="https://github.com/jdrudolph/unraid-templates">
+
+<CHANGES>
+### 2026.10.25
+- First version: connect Docker to GitHub (private image), install container template, all from the web UI.
+</CHANGES>
+
+<!-- icon, cached on flash so boot works offline -->
+<FILE Name="&plgPATH;/hebrew-poc.png">
+<URL>&repo;/hebrew-poc/icon.png</URL>
+</FILE>
+
+<!-- Settings -> User Utilities -> Hebrew PoC -->
+<FILE Name="&emhttp;/HebrewPoc.page">
+<INLINE><![CDATA[Menu="Utilities"
+Title="Hebrew PoC"
+Icon="hebrew-poc.png"
+---
+<style>
+#hp{max-width:760px}
+#hp h3{margin:22px 0 6px}
+#hp .st div{margin:3px 0}
+#hp .st span{display:inline-block;width:1.6em;font-weight:bold}
+#hp .ok{color:#43a047}
+#hp .no{color:#e53935}
+#hp input[type=password]{width:420px;max-width:100%}
+#hp .msg{margin-top:8px}
+#hp small{opacity:.7}
+</style>
+
+<div id="hp">
+  <p>Sets up the private <b>hebrew-poc</b> container: connects Docker to GitHub with a read-only token
+     (kept across reboots) and adds the container template.</p>
+
+  <div class="st" id="hpStatus">Checking…</div>
+
+  <h3>1. Connect to GitHub</h3>
+  <p><a href="https://github.com/settings/tokens/new?scopes=read:packages&amp;description=unraid-hebrew-poc" target="_blank">Create a token on GitHub</a>
+     (only <code>read:packages</code> is ticked), click <i>Generate token</i>, and paste it here.</p>
+  <input type="password" id="hpToken" placeholder="ghp_…" autocomplete="off">
+  <input type="button" value="Connect" onclick="hpSetup()">
+  <div class="msg" id="hpMsg"></div>
+
+  <h3>2. Install the container</h3>
+  <p id="hpInstall">
+    <a class="button" href="/Docker/AddContainer?xmlTemplate=user:/boot/config/plugins/dockerMan/templates-user/my-hebrew-poc.xml">Install hebrew-poc</a>
+    <br><small>Paste at least one API key on the next page, then click Apply. (Or: Docker → Add Container → Template: hebrew-poc.)</small>
+  </p>
+  <p id="hpOpen"></p>
+
+  <h3>Other</h3>
+  <input type="button" value="Disconnect GitHub" onclick="hpAction('disconnect')">
+  <input type="button" value="Re-download template" onclick="hpAction('template')">
+</div>
+
+<script>
+var HP_URL  = '/plugins/hebrew-poc/include/action.php';
+var HP_CSRF = '<?=$var['csrf_token']?>';
+
+function hpPost(data) {
+  return $.post(HP_URL, $.extend({csrf_token: HP_CSRF}, data), null, 'json');
+}
+function hpRow(ok, label) {
+  return '<div><span class="' + (ok ? 'ok' : 'no') + '">' + (ok ? '✓' : '✗') + '</span>' + label + '</div>';
+}
+function hpEsc(s) { return $('<i>').text(s || '').html(); }
+function hpStatus() {
+  hpPost({action: 'status'}).done(function (s) {
+    var c = s.container ? ('Container installed' + (s.running ? ' and running' : ' (stopped)')) : 'Container not installed yet';
+    $('#hpStatus').html(hpRow(s.login, 'Docker connected to GitHub') + hpRow(s.template, 'Container template installed') + hpRow(s.container, c));
+    $('#hpInstall').toggle(s.template && !s.container);
+    $('#hpOpen').html(s.webui ? '<a class="button" target="_blank" href="' + s.webui + '">Open the app</a>' : '');
+  }).fail(function (x) { $('#hpStatus').text('Status check failed (' + x.status + ')'); });
+}
+function hpShow(r) {
+  $('#hpMsg').html('<span class="' + (r.ok ? 'ok' : 'no') + '">' + (r.ok ? '✓' : '✗') + '</span> ' + hpEsc(r.msg) +
+                   (r.detail ? '<br><small>' + hpEsc(r.detail) + '</small>' : ''));
+}
+function hpSetup() {
+  $('#hpMsg').text('Connecting…');
+  hpPost({action: 'setup', token: $('#hpToken').val()}).done(function (r) {
+    hpShow(r); if (r.ok) $('#hpToken').val(''); hpStatus();
+  }).fail(function (x) { $('#hpMsg').text('Request failed (' + x.status + ')'); });
+}
+function hpAction(a) {
+  hpPost({action: a}).done(function (r) { hpShow(r); hpStatus(); });
+}
+hpStatus();
+</script>
+]]>
+</INLINE>
+</FILE>
+
+<!-- backend for the page -->
+<FILE Name="&emhttp;/include/action.php">
+<INLINE><![CDATA[<?php
+header('Content-Type: application/json');
+
+$DOCKER     = '/usr/bin/docker';
+$GH_USER    = 'jdrudolph';
+$IMAGE      = 'ghcr.io/jdrudolph/hebrew-poc:latest';
+$AUTH_FLASH = '/boot/config/plugins/hebrew-poc/ghcr-auth.json';
+$DOCKER_CFG = '/root/.docker/config.json';
+$TPL_URL    = 'https://raw.githubusercontent.com/jdrudolph/unraid-templates/main/hebrew-poc/hebrew-poc.xml';
+$TPL        = '/boot/config/plugins/dockerMan/templates-user/my-hebrew-poc.xml';
+
+function out($ok, $msg, $extra = []) { echo json_encode(['ok' => $ok, 'msg' => $msg] + $extra); exit; }
+
+function run($cmd, $stdin = null) {
+  $p = proc_open($cmd, [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+  if (!is_resource($p)) return [1, '', 'could not start ' . $cmd[0]];
+  if ($stdin !== null) fwrite($pipes[0], $stdin);
+  fclose($pipes[0]);
+  $o = stream_get_contents($pipes[1]); $e = stream_get_contents($pipes[2]);
+  fclose($pipes[1]); fclose($pipes[2]);
+  return [proc_close($p), trim($o), trim($e)];
+}
+
+function docker_cfg() {
+  global $DOCKER_CFG;
+  $c = @json_decode(@file_get_contents($DOCKER_CFG), true);
+  return is_array($c) ? $c : [];
+}
+
+function fetch_template() {
+  global $TPL_URL, $TPL;
+  $xml = @file_get_contents($TPL_URL);
+  if ($xml === false || strpos($xml, '<Container') === false) return false;
+  @mkdir(dirname($TPL), 0777, true);
+  return file_put_contents($TPL, $xml) !== false;
+}
+
+switch ($_POST['action'] ?? '') {
+
+case 'status':
+  $login = isset(docker_cfg()['auths']['ghcr.io']);
+  [$rc, $state] = run([$DOCKER, 'inspect', '-f', '{{.State.Running}}', 'hebrew-poc']);
+  $container = $rc === 0;
+  $webui = null;
+  if ($container) {
+    [$rc2, $port] = run([$DOCKER, 'port', 'hebrew-poc', '8000/tcp']);
+    if ($rc2 === 0 && preg_match('/:(\d+)\s*$/m', $port, $m)) {
+      $host = preg_replace('/:\d+$/', '', $_SERVER['HTTP_HOST'] ?? 'localhost');
+      $webui = "http://$host:{$m[1]}/";
+    }
+  }
+  out(true, '', ['login' => $login, 'template' => is_file($TPL), 'container' => $container,
+                 'running' => $container && $state === 'true', 'webui' => $webui]);
+
+case 'setup':
+  $token = trim($_POST['token'] ?? '');
+  if ($token === '') out(false, 'Please paste a token first.');
+  [$rc, , $err] = run([$DOCKER, 'login', 'ghcr.io', '-u', $GH_USER, '--password-stdin'], $token);
+  if ($rc !== 0) out(false, 'GitHub rejected the token. Make sure it has the read:packages scope.', ['detail' => $err]);
+  $auth = docker_cfg()['auths']['ghcr.io'] ?? null;
+  if (!$auth) out(false, 'Login worked, but Docker did not store the credentials where expected.');
+  @mkdir(dirname($AUTH_FLASH), 0700, true);
+  file_put_contents($AUTH_FLASH, json_encode(['ghcr.io' => $auth]));
+  if (!fetch_template()) out(false, 'Connected, but the template could not be downloaded. Check internet access and click "Re-download template".');
+  [$mrc] = run([$DOCKER, 'manifest', 'inspect', $IMAGE]);
+  out(true, $mrc === 0
+    ? 'Connected. Image is reachable and the template is installed.'
+    : 'Connected and template installed. The image isn\'t published yet: wait for the GitHub build to finish, then install.');
+
+case 'template':
+  $ok = fetch_template();
+  out($ok, $ok ? 'Template downloaded.' : 'Template download failed. Check internet access.');
+
+case 'disconnect':
+  run([$DOCKER, 'logout', 'ghcr.io']);
+  @unlink($AUTH_FLASH);
+  out(true, 'Disconnected. The container keeps running but can\'t update until you connect again.');
+
+default:
+  out(false, 'Unknown action.');
+}
+]]>
+</INLINE>
+</FILE>
+
+<!-- runs on install and on every boot: restore the GitHub login (Unraid wipes /root at boot) -->
+<FILE Run="/bin/bash">
+<INLINE><![CDATA[
+PLG=/boot/config/plugins/hebrew-poc
+EMH=/usr/local/emhttp/plugins/hebrew-poc
+cp -f "$PLG/hebrew-poc.png" "$EMH/hebrew-poc.png" 2>/dev/null
+
+if [ -f "$PLG/ghcr-auth.json" ]; then
+  mkdir -p /root/.docker
+  # merge, so other registry logins are kept
+  php -r '
+    $f = "/root/.docker/config.json";
+    $c = @json_decode(@file_get_contents($f), true); if (!is_array($c)) $c = [];
+    $a = json_decode(file_get_contents($argv[1]), true);
+    if (is_array($a)) { $c["auths"] = array_merge($c["auths"] ?? [], $a); file_put_contents($f, json_encode($c, JSON_PRETTY_PRINT)); }
+  ' "$PLG/ghcr-auth.json"
+  echo "hebrew-poc: GitHub login restored"
+fi
+
+# clean up the older console-script method, if it was ever used
+sed -i '/hebrew-poc: restore ghcr.io login/d' /boot/config/go 2>/dev/null
+rm -f /boot/config/docker-ghcr.json
+
+echo "hebrew-poc helper installed: Settings -> User Utilities -> Hebrew PoC"
+]]>
+</INLINE>
+</FILE>
+
+<FILE Run="/bin/bash" Method="remove">
+<INLINE><![CDATA[
+docker logout ghcr.io >/dev/null 2>&1
+rm -rf /usr/local/emhttp/plugins/hebrew-poc /boot/config/plugins/hebrew-poc
+echo "hebrew-poc helper removed (the container and its template are left in place)"
+]]>
+</INLINE>
+</FILE>
+
+</PLUGIN>

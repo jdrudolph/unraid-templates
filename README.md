@@ -1,25 +1,27 @@
 # Unraid templates
 
-Container templates for my Unraid server. Only the install form and icons live here;
-the app code and images are private.
+Container templates and helper plugins for my Unraid server. Only install forms, icons and the
+installer live here; the app code and images are private.
 
 ## hebrew-poc
 
 Hebrew learning app: text-to-speech comparison + local speech check.
 
-**One-time setup** (Unraid terminal):
+### Install (no console needed)
 
-```
-bash <(curl -fsSL https://raw.githubusercontent.com/jdrudolph/unraid-templates/main/hebrew-poc/install.sh)
-```
+1. **Plugins → Install Plugin**, paste this URL, click **Install**:
+   ```
+   https://raw.githubusercontent.com/jdrudolph/unraid-templates/main/plugin/hebrew-poc.plg
+   ```
+2. **Settings → User Utilities → Hebrew PoC**
+   - Click *Create a token on GitHub* (only `read:packages` is pre-ticked), generate it, paste it, click **Connect**.
+   - Click **Install hebrew-poc**, paste at least one API key, click **Apply**.
+3. Click **Open the app** on the same page (or WebUI on the Docker tab).
 
-It asks for a GitHub token with only `read:packages`, logs Docker in to ghcr.io,
-keeps that login across reboots, and installs the template.
+The plugin restores the GitHub login on every boot, so updates keep working.
+Updates for the app show up on the Docker tab; updates for the plugin under Plugins.
 
-**Then:** Docker → Add Container → Template: **hebrew-poc** → paste an API key → Apply.
+### Remove
 
-Updates show up on the Docker tab like any other app. To replace an expired token, run the
-setup command again.
-
-**Uninstall the login:** delete `/boot/config/docker-ghcr.json` and the line marked
-`hebrew-poc` in `/boot/config/go`.
+Plugins → hebrew-poc → Remove. That removes the GitHub login; the container and its template stay
+until you remove them on the Docker tab.

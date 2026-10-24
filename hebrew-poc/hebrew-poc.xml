@@ -19,7 +19,7 @@ The microphone only works over HTTPS: on the Unraid host run "tailscale serve --
   <Icon>https://raw.githubusercontent.com/jdrudolph/unraid-templates/main/hebrew-poc/icon.png</Icon>
   <ExtraParams>--user 99:100</ExtraParams>
   <PostArgs/>
-  <Requires>The image is private: run the one-time setup script from github.com/jdrudolph/unraid-templates first (GitHub login that survives reboots). Plus at least one API key: Azure Speech, Google Cloud Text-to-Speech or ElevenLabs.</Requires>
+  <Requires>The image is private: install the "hebrew-poc" plugin first (Plugins → Install Plugin, URL in github.com/jdrudolph/unraid-templates); it connects Docker to GitHub. Plus at least one API key: Azure Speech, Google Cloud Text-to-Speech or ElevenLabs.</Requires>
 
   <Config Name="Web UI port" Target="8000" Default="8000" Mode="tcp" Description="Port for the web page and API." Type="Port" Display="always" Required="true" Mask="false">8000</Config>
   <Config Name="App data" Target="/data" Default="/mnt/user/appdata/hebrew-poc" Mode="rw" Description="Audio cache and downloaded speech model (~1.6 GB)." Type="Path" Display="advanced" Required="true" Mask="false">/mnt/user/appdata/hebrew-poc</Config>
