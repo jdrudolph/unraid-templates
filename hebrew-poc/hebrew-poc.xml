@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>hebrew-poc</Name>
+  <Repository>ghcr.io/jdrudolph/hebrew-poc:latest</Repository>
+  <Registry>https://github.com/jdrudolph/hebrew-poc/pkgs/container/hebrew-poc</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/jdrudolph/hebrew-poc/issues</Support>
+  <Project>https://github.com/jdrudolph/hebrew-poc</Project>
+  <Overview>Hebrew learning app (proof of concept). Type a Hebrew phrase, hear it read aloud by Azure, Google or ElevenLabs side by side, then record yourself and get a word-by-word check from a local Whisper speech model (runs on CPU, no GPU needed).[br][br]
+Fill in at least one TTS API key below. Generated audio is cached in appdata, so each phrase is only paid for once.[br][br]
+First start downloads the Hebrew speech model (~1.6 GB) into appdata; the web page shows the progress.[br][br]
+The microphone only works over HTTPS: on the Unraid host run "tailscale serve --bg 8000" and open https://YOUR-SERVER.YOUR-TAILNET.ts.net</Overview>
+  <Category>Tools: Other:</Category>
+  <WebUI>http://[IP]:[PORT:8000]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/jdrudolph/unraid-templates/main/hebrew-poc/hebrew-poc.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/jdrudolph/unraid-templates/main/hebrew-poc/icon.png</Icon>
+  <ExtraParams>--user 99:100</ExtraParams>
+  <PostArgs/>
+  <Requires>The image is private: run the one-time setup script from github.com/jdrudolph/unraid-templates first (GitHub login that survives reboots). Plus at least one API key: Azure Speech, Google Cloud Text-to-Speech or ElevenLabs.</Requires>
+
+  <Config Name="Web UI port" Target="8000" Default="8000" Mode="tcp" Description="Port for the web page and API." Type="Port" Display="always" Required="true" Mask="false">8000</Config>
+  <Config Name="App data" Target="/data" Default="/mnt/user/appdata/hebrew-poc" Mode="rw" Description="Audio cache and downloaded speech model (~1.6 GB)." Type="Path" Display="advanced" Required="true" Mask="false">/mnt/user/appdata/hebrew-poc</Config>
+
+  <Config Name="Azure Speech key" Target="AZURE_SPEECH_KEY" Default="" Mode="" Description="portal.azure.com → create a Speech resource (free F0 tier) → Keys and Endpoint." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+  <Config Name="Azure region" Target="AZURE_SPEECH_REGION" Default="westeurope" Mode="" Description="Region of your Speech resource, e.g. westeurope, germanywestcentral." Type="Variable" Display="always" Required="false" Mask="false">westeurope</Config>
+  <Config Name="Google TTS API key" Target="GOOGLE_TTS_API_KEY" Default="" Mode="" Description="Google Cloud console → enable Cloud Text-to-Speech API → create an API key restricted to it." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+  <Config Name="ElevenLabs API key" Target="ELEVENLABS_API_KEY" Default="" Mode="" Description="elevenlabs.io → profile → API keys." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+
+  <Config Name="Speech model" Target="WHISPER_MODEL" Default="ivrit-ai/whisper-large-v3-turbo-ct2|small|medium" Mode="" Description="ivrit-ai = Hebrew-tuned, most accurate (a few seconds per phrase on an N100). small = fast but weak at Hebrew." Type="Variable" Display="advanced" Required="true" Mask="false">ivrit-ai/whisper-large-v3-turbo-ct2</Config>
+  <Config Name="CPU threads" Target="WHISPER_THREADS" Default="4" Mode="" Description="Threads used for speech recognition." Type="Variable" Display="advanced" Required="false" Mask="false">4</Config>
+  <Config Name="Azure voice" Target="AZURE_VOICE" Default="he-IL-HilaNeural|he-IL-AvriNeural" Mode="" Description="Hila (female) or Avri (male)." Type="Variable" Display="advanced" Required="false" Mask="false">he-IL-HilaNeural</Config>
+  <Config Name="Google voice" Target="GOOGLE_VOICE" Default="" Mode="" Description="Leave empty for the default he-IL voice, or e.g. he-IL-Wavenet-A." Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="ElevenLabs voice ID" Target="ELEVENLABS_VOICE_ID" Default="JBFqnCBsd6RMkjVDRZzb" Mode="" Description="Any voice ID from your ElevenLabs voice library." Type="Variable" Display="advanced" Required="false" Mask="false">JBFqnCBsd6RMkjVDRZzb</Config>
+  <Config Name="ElevenLabs model" Target="ELEVENLABS_MODEL" Default="eleven_v3" Mode="" Description="ElevenLabs model with Hebrew support." Type="Variable" Display="advanced" Required="false" Mask="false">eleven_v3</Config>
+</Container>
