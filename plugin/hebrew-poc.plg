@@ -2,10 +2,9 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "hebrew-poc">
 <!ENTITY author    "jdrudolph">
-<!ENTITY version   "2026.10.25">
+<!ENTITY version   "2026.10.25a">
 <!ENTITY repo      "https://raw.githubusercontent.com/jdrudolph/unraid-templates/main">
 <!ENTITY pluginURL "&repo;/plugin/&name;.plg">
-<!ENTITY plgPATH   "/boot/config/plugins/&name;">
 <!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
 ]>
 
@@ -13,13 +12,32 @@
         min="6.12.0" icon="language" support="https://github.com/jdrudolph/unraid-templates">
 
 <CHANGES>
+### 2026.10.25a
+- Create folders explicitly and report the real error; icon download no longer blocks install.
+
 ### 2026.10.25
 - First version: connect Docker to GitHub (private image), install container template, all from the web UI.
 </CHANGES>
 
-<!-- icon, cached on flash so boot works offline -->
-<FILE Name="&plgPATH;/hebrew-poc.png">
-<URL>&repo;/hebrew-poc/icon.png</URL>
+<!-- create our folders first, with a readable error if that fails -->
+<FILE Run="/bin/bash">
+<INLINE><![CDATA[
+for d in /boot/config/plugins/hebrew-poc /usr/local/emhttp/plugins/hebrew-poc/include; do
+  if ! out=$(mkdir -p "$d" 2>&1); then
+    echo "hebrew-poc: cannot create $d: $out"
+    ls -ld /boot /boot/config /boot/config/plugins "$d" 2>&1 | sed 's/^/  /'
+    df -h /boot 2>&1 | sed 's/^/  /'
+    exit 1
+  fi
+done
+# icon: cache on flash once; never fatal
+if [ ! -s /boot/config/plugins/hebrew-poc/hebrew-poc.png ]; then
+  curl -fsSL -o /boot/config/plugins/hebrew-poc/hebrew-poc.png \
+    https://raw.githubusercontent.com/jdrudolph/unraid-templates/main/hebrew-poc/icon.png 2>/dev/null \
+    || rm -f /boot/config/plugins/hebrew-poc/hebrew-poc.png
+fi
+true
+]]></INLINE>
 </FILE>
 
 <!-- Settings -> User Utilities -> Hebrew PoC -->
