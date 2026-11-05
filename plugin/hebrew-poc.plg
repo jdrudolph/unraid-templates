@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "hebrew-poc">
 <!ENTITY author    "jdrudolph">
-<!ENTITY version   "2026.10.25a">
+<!ENTITY version   "2026.11.05">
 <!ENTITY repo      "https://raw.githubusercontent.com/jdrudolph/unraid-templates/main">
 <!ENTITY pluginURL "&repo;/plugin/&name;.plg">
 <!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
@@ -12,6 +12,9 @@
         min="6.12.0" icon="language" support="https://github.com/jdrudolph/unraid-templates">
 
 <CHANGES>
+### 2026.11.05
+- Template for the full learning app: proxynet + SWAG, free Edge voice (no key needed), sign-in and progress in App data.
+
 ### 2026.10.25a
 - Create folders explicitly and report the real error; icon download no longer blocks install.
 
@@ -74,7 +77,7 @@ Icon="hebrew-poc.png"
   <h3>2. Install the container</h3>
   <p id="hpInstall">
     <a class="button" href="/Docker/AddContainer?xmlTemplate=user:/boot/config/plugins/dockerMan/templates-user/my-hebrew-poc.xml">Install hebrew-poc</a>
-    <br><small>Paste at least one API key on the next page, then click Apply. (Or: Docker → Add Container → Template: hebrew-poc.)</small>
+    <br><small>Check the settings on the next page (keys are optional), then click Apply. (Or: Docker → Add Container → Template: hebrew-poc.)</small>
   </p>
   <p id="hpOpen"></p>
 
